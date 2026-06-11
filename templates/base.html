@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Porra Mundial 2026</title>
+<style>
+  :root { --verde: #1a7a3c; --oro: #c9a227; --gris: #f4f4f2; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--gris); color: #222; }
+  header { background: var(--verde); color: #fff; padding: 14px 24px; display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 1.3rem; }
+  header nav a { color: #eaf6ee; text-decoration: none; margin-right: 16px; font-weight: 600; }
+  header nav a:hover { text-decoration: underline; }
+  main { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+  table { border-collapse: collapse; width: 100%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  th, td { padding: 8px 12px; border-bottom: 1px solid #e3e3e0; text-align: left; }
+  th { background: #efe9d8; }
+  tr:hover td { background: #fbf9f2; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .card { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); border-radius: 6px; padding: 16px; margin-bottom: 20px; }
+  .grid { display: grid; gap: 16px; }
+  .grid.g3 { grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); }
+  h2 { color: var(--verde); border-bottom: 2px solid var(--oro); padding-bottom: 4px; }
+  h3 { margin: 4px 0 10px; }
+  input[type=number] { width: 52px; padding: 3px; }
+  input[type=text], select { padding: 4px; }
+  button { background: var(--verde); color: #fff; border: 0; padding: 8px 18px; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+  button:hover { background: #145e2e; }
+  .aviso { background: #fff4d6; border-left: 4px solid var(--oro); padding: 8px 12px; margin: 10px 0; }
+  .ok { color: var(--verde); font-weight: 700; }
+  .pend { color: #999; }
+  .partido { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-size: .92rem; }
+  .partido .eq { flex: 1; }
+  .partido .eq.v { text-align: right; }
+  a { color: var(--verde); }
+  .pos1 td { background: #fdf6dd; font-weight: 700; }
+  .mini { font-size: .85rem; color: #666; }
+  .unxdos { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+  .unxdos label { cursor: pointer; }
+  .chip { display: inline-block; margin: 0 8px 6px 0; }
+  .borrar { color: #bbb; text-decoration: none; }
+  .borrar:hover { color: #b00; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚽ Porra Mundial USA-México-Canadá 2026</h1>
+  <nav>
+    <a href="{{ url_for('home') }}">Clasificación</a>
+    <a href="{{ url_for('comparativa') }}">Comparativa</a>
+    <a href="{{ url_for('resultados_vista') }}">Meter resultados</a>
+  </nav>
+</header>
+<main>
+{% block contenido %}{% endblock %}
+</main>
+</body>
+</html>

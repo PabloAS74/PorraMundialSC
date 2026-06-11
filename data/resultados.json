@@ -1,0 +1,20 @@
+{
+ "grupos_1x2": {},
+ "exactos": {},
+ "orden": {},
+ "grupo_mas": [],
+ "grupo_menos": [],
+ "equipo_mas_goles": [],
+ "clasificados": {
+  "octavos": [],
+  "cuartos": [],
+  "semifinales": [],
+  "final": []
+ },
+ "campeon": null,
+ "goles3": {},
+ "goles_semifinales": null,
+ "goles_final": null,
+ "goleador_correctos": [],
+ "trebol_ganadores": {}
+}

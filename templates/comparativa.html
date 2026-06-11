@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% block contenido %}
+<style>
+  .comp-nav { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 20px; }
+  .comp-nav a { background:#e8f5e9; border:1px solid #a5d6a7; border-radius:4px; padding:5px 13px; text-decoration:none; color:#1a7a3c; font-size:.88rem; font-weight:600; }
+  .comp-nav a:hover { background:#c8e6c9; }
+
+  .scroll-x { overflow-x:auto; margin-bottom:20px; }
+  .ct { border-collapse:collapse; font-size:.8rem; }
+  .ct th, .ct td { padding:4px 8px; border:1px solid #ddd; white-space:nowrap; }
+  .ct thead th { background:#efe9d8; position:sticky; top:0; z-index:2; }
+  .ct .pcol { text-align:center; font-weight:700; font-size:.75rem; max-width:70px; overflow:hidden; text-overflow:ellipsis; }
+  .ct .pcell { text-align:center; min-width:34px; }
+  .ct .fcol { position:sticky; left:0; z-index:1; background:#fff; font-size:.78rem; min-width:160px; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
+  .ct thead .fcol { background:#efe9d8; z-index:3; }
+  .ct .fsep td { background:#1a7a3c; color:#fff; font-weight:700; font-size:.78rem; padding:3px 10px; }
+  .ct .real-col { background:#f0f8ff; font-weight:600; }
+
+  /* badges 1X2 */
+  .b1  { background:#4489d7; color:#fff; border-radius:3px; padding:1px 5px; font-weight:700; font-size:.82rem; }
+  .bX  { background:#5b5b5b; color:#fff; border-radius:3px; padding:1px 5px; font-weight:700; font-size:.82rem; }
+  .b2  { background:#c03a15; color:#fff; border-radius:3px; padding:1px 5px; font-weight:700; font-size:.82rem; }
+  .bn  { color:#ccc; font-size:.82rem; }
+
+  /* correctness */
+  .ok  { background:#d4edda !important; }
+  .err { background:#f8d7da !important; }
+  .ok .b1,.ok .bX,.ok .b2 { outline:2px solid #1a7a3c; }
+  .err .b1,.err .bX,.err .b2 { opacity:.55; }
+
+  .leyenda { display:flex; flex-wrap:wrap; gap:14px; font-size:.82rem; margin:0 0 18px; align-items:center; }
+  .leyenda span { white-space:nowrap; }
+  .leg-ok  { background:#d4edda; padding:2px 8px; border-radius:3px; }
+  .leg-err { background:#f8d7da; padding:2px 8px; border-radius:3px; }
+
+  .ct.compact th, .ct.compact td { padding:3px 5px; font-size:.75rem; }
+  .grid-grupos { display:grid; gap:16px; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); margin-bottom:20px; }
+  .card-grupo h4 { margin:0 0 6px; font-size:.9rem; color:var(--verde); }
+  .card-grupo .equips { font-size:.73rem; color:#888; }
+</style>
+
+<h2>Comparativa de predicciones</h2>
+{% if generado %}<p class="mini">Datos del {{ generado }}</p>{% endif %}
+
+<div class="comp-nav">
+  <a href="#s-grupos">1X2 grupos</a>
+  <a href="#s-orden">Orden grupos</a>
+  <a href="#s-exactos">Exactos</a>
+  <a href="#s-bonus">Bonus 1ª fase</a>
+  <a href="#s-clasif">Clasificados</a>
+  <a href="#s-goles">Goles</a>
+  <a href="#s-goleador">Goleador</a>
+  <a href="#s-treboles">Tréboles</a>
+</div>
+
+<div class="leyenda">
+  <strong>Leyenda:</strong>
+  <span><span class="b1">1</span> local gana</span>
+  <span><span class="bX">X</span> empate</span>
+  <span><span class="b2">2</span> visitante gana</span>
+  <span class="leg-ok">verde = acertado</span>
+  <span class="leg-err">rojo = fallado</span>
+  <span style="color:#aaa">· = sin predicción</span>
+</div>
+
+{# ════════════════════════════════════════════════
+   1.  1X2 DE GRUPOS
+   ════════════════════════════════════════════════ #}
+<h3 id="s-grupos">1 — 1X2 de los partidos de grupos</h3>
+<div class="scroll-x">
+<table class="ct">
+  <thead>
+    <tr>
+      <th class="fcol">Partido</th>
+      {% for p in participantes %}<th class="pcol" title="{{ p.nombre }}">{{ ncorto(p.nombre) }}</th>{% endfor %}
+      <th class="pcol real-col">Real</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for letra, partidos in P.PARTIDOS_GRUPO.items() %}
+    <tr class="fsep"><td colspan="{{ participantes|length + 2 }}">Grupo {{ letra }}</td></tr>
+    {% for loc, vis in partidos %}
+    {% set clave = P.clave_partido(loc, vis) %}
+    {% set real = resultados.grupos_1x2.get(clave) %}
+    <tr>
+      <td class="fcol">{{ loc }} – {{ vis }}</td>
+      {% for p in participantes %}
+        {% set pred = p.grupos[letra].signos.get(clave) %}
+        {% if real and pred %}
+          {% if pred == real %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+        {% else %}<td class="pcell">{% endif %}
+        {% if pred %}<span class="b{{ pred }}">{{ pred }}</span>{% else %}<span class="bn">·</span>{% endif %}
+        </td>
+      {% endfor %}
+      <td class="pcell real-col">{% if real %}<span class="b{{ real }}">{{ real }}</span>{% else %}<span class="bn">?</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{# ════════════════════════════════════════════════
+   2.  ORDEN DE GRUPOS
+   ════════════════════════════════════════════════ #}
+<h3 id="s-orden">2 — Orden de grupos</h3>
+<div class="scroll-x">
+<table class="ct compact">
+  <thead>
+    <tr>
+      <th class="fcol" style="min-width:90px">Grupo / Pos.</th>
+      {% for p in participantes %}<th class="pcol" title="{{ p.nombre }}">{{ ncorto(p.nombre) }}</th>{% endfor %}
+      <th class="pcol real-col">Real</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for letra in P.GRUPOS %}
+    <tr class="fsep"><td colspan="{{ participantes|length + 2 }}">Grupo {{ letra }} — {{ P.GRUPOS[letra]|join(', ') }}</td></tr>
+    {% set real_ord = resultados.orden.get(letra, []) %}
+    {% for pos in range(3) %}
+    {% set real_eq = real_ord[pos] if real_ord|length > pos else none %}
+    <tr>
+      <td class="fcol" style="min-width:90px"><strong>{{ pos + 1 }}°</strong></td>
+      {% for p in participantes %}
+        {% set eq = p.grupos[letra].orden[pos] if p.grupos[letra].orden|length > pos else none %}
+        {% if real_eq and eq %}
+          {% if P.normalizar(eq) == P.normalizar(real_eq) %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+        {% else %}<td class="pcell">{% endif %}
+        {{ eq or '·' }}
+        </td>
+      {% endfor %}
+      <td class="pcell real-col">{{ real_eq or '?' }}</td>
+    </tr>
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{# ════════════════════════════════════════════════
+   3.  EXACTOS (12 partidos bonus)
+   ════════════════════════════════════════════════ #}
+<h3 id="s-exactos">3 — Resultados exactos (12 partidos bonus)</h3>
+<div class="scroll-x">
+<table class="ct">
+  <thead>
+    <tr>
+      <th class="fcol">Partido</th>
+      {% for p in participantes %}<th class="pcol" title="{{ p.nombre }}">{{ ncorto(p.nombre) }}</th>{% endfor %}
+      <th class="pcol real-col">Real</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for ex in exactos_lista %}
+  {% set real_m = resultados.exactos.get(ex.clave) %}
+  <tr>
+    <td class="fcol">{{ ex.label }}</td>
+    {% for p in participantes %}
+      {% set m = p.bonus.exactos.get(ex.clave) %}
+      {% if real_m and m %}
+        {% if m[0] == real_m[0] and m[1] == real_m[1] %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+      {% else %}<td class="pcell">{% endif %}
+      {% if m %}{{ m[0] }}-{{ m[1] }}{% else %}<span class="bn">·</span>{% endif %}
+      </td>
+    {% endfor %}
+    <td class="pcell real-col">{% if real_m %}{{ real_m[0] }}-{{ real_m[1] }}{% else %}?{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{# ════════════════════════════════════════════════
+   4.  BONUS 1ª FASE
+   ════════════════════════════════════════════════ #}
+<h3 id="s-bonus">4 — Bonus de 1ª fase</h3>
+<div class="scroll-x">
+<table class="ct">
+  <thead>
+    <tr>
+      <th class="fcol">Pregunta</th>
+      {% for p in participantes %}<th class="pcol" title="{{ p.nombre }}">{{ ncorto(p.nombre) }}</th>{% endfor %}
+      <th class="pcol real-col">Real</th>
+    </tr>
+  </thead>
+  <tbody>
+  {# Grupo más goleador #}
+  {% set real_gmas = resultados.grupo_mas %}
+  <tr>
+    <td class="fcol">Grupo más goleador</td>
+    {% for p in participantes %}
+      {% set pred = p.bonus.grupo_mas %}
+      {% if real_gmas and pred %}
+        {% if pred in real_gmas %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+      {% else %}<td class="pcell">{% endif %}
+      {{ pred or '·' }}
+      </td>
+    {% endfor %}
+    <td class="pcell real-col">{{ real_gmas|join(', ') if real_gmas else '?' }}</td>
+  </tr>
+  {# Grupo menos goleador #}
+  {% set real_gmenos = resultados.grupo_menos %}
+  <tr>
+    <td class="fcol">Grupo menos goleador</td>
+    {% for p in participantes %}
+      {% set pred = p.bonus.grupo_menos %}
+      {% if real_gmenos and pred %}
+        {% if pred in real_gmenos %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+      {% else %}<td class="pcell">{% endif %}
+      {{ pred or '·' }}
+      </td>
+    {% endfor %}
+    <td class="pcell real-col">{{ real_gmenos|join(', ') if real_gmenos else '?' }}</td>
+  </tr>
+  {# Equipo más goles (bonus) #}
+  {% set real_emg = resultados.equipo_mas_goles %}
+  <tr>
+    <td class="fcol">Selección más goleadora</td>
+    {% for p in participantes %}
+      {% set pred = p.bonus.equipo_mas_goles %}
+      {% if real_emg and pred %}
+        {% if pred in real_emg %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+      {% else %}<td class="pcell">{% endif %}
+      {{ pred or '·' }}
+      </td>
+    {% endfor %}
+    <td class="pcell real-col">{{ real_emg|join(', ') if real_emg else '?' }}</td>
+  </tr>
+  </tbody>
+</table>
+</div>
+
+{# ════════════════════════════════════════════════
+   5.  CLASIFICADOS + CAMPEÓN
+   ════════════════════════════════════════════════ #}
+<h3 id="s-clasif">5 — Clasificados y campeón</h3>
+
+<h4 style="margin-bottom:6px">Campeón</h4>
+<div class="scroll-x">
+<table class="ct">
+  <thead>
+    <tr>
+      {% for p in participantes %}<th class="pcol" title="{{ p.nombre }}">{{ ncorto(p.nombre) }}</th>{% endfor %}
+      <th class="pcol real-col">Real</th>
+    </tr>
+  </thead>
+  <tbody>
+  <tr>
+    {% set real_c = resultados.campeon %}
+    {% for p in participantes %}
+      {% set pred = p.segunda.campeon %}
+      {% if real_c and pred %}
+        {% if P.normalizar(pred) == P.normalizar(real_c) %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+      {% else %}<td class="pcell">{% endif %}
+      {{ pred or '·' }}
+      </td>
+    {% endfor %}
+    <td class="pcell real-col">{{ real_c or '?' }}</td>
+  </tr>
+  </tbody>
+</table>
+</div>
+
+{% set rondas_labels = {"octavos": "1/8 de final — 16 clasificados", "cuartos": "1/4 de final — 8 clasificados", "semifinales": "Semifinales — 4 clasificados", "final": "Final — 2 finalistas"} %}
+{% for ronda, info in rondas_clasif.items() %}
+<h4 style="margin:16px 0 6px">{{ rondas_labels[ronda] }}</h4>
+<div class="scroll-x">
+<table class="ct compact">
+  <thead>
+    <tr>
+      <th class="fcol" style="min-width:120px">Equipo</th>
+      {% for p in participantes %}<th class="pcol" title="{{ p.nombre }}">{{ ncorto(p.nombre) }}</th>{% endfor %}
+      <th class="pcol real-col">Real</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for equipo in info.teams %}
+  {% set en_real = equipo in info.real %}
+  <tr>
+    <td class="fcol{% if en_real %} ok{% endif %}" style="{% if en_real %}font-weight:700;{% endif %}">{{ equipo }}</td>
+    {% for p in participantes %}
+      {% set lista = p.segunda['clasif_' + ronda] %}
+      {% set marcado = equipo in lista %}
+      {% if info.real %}
+        {% if marcado and en_real %}<td class="pcell ok">✓
+        {% elif marcado and not en_real %}<td class="pcell err">✓
+        {% elif not marcado and en_real %}<td class="pcell">·
+        {% else %}<td class="pcell">·{% endif %}
+      {% else %}
+        {% if marcado %}<td class="pcell">✓{% else %}<td class="pcell"><span class="bn">·</span>{% endif %}
+      {% endif %}
+      </td>
+    {% endfor %}
+    <td class="pcell real-col">{% if en_real %}✓{% else %}<span class="bn">·</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endfor %}
+
+{# ════════════════════════════════════════════════
+   6.  GOLES
+   ════════════════════════════════════════════════ #}
+<h3 id="s-goles">6 — Preguntas de goles</h3>
+<div class="scroll-x">
+<table class="ct">
+  <thead>
+    <tr>
+      <th class="fcol">Pregunta</th>
+      {% for p in participantes %}<th class="pcol" title="{{ p.nombre }}">{{ ncorto(p.nombre) }}</th>{% endfor %}
+      <th class="pcol real-col">Real</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for g in goles_preguntas %}
+  <tr>
+    <td class="fcol">{{ g.label }}</td>
+    {% for p in participantes %}
+      {% set pred = p.segunda[g.campo] %}
+      {% if g.real is not none and pred is not none %}
+        {% if pred == g.real %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+      {% else %}<td class="pcell">{% endif %}
+      {{ pred if pred is not none else '·' }}
+      </td>
+    {% endfor %}
+    <td class="pcell real-col">{{ g.real if g.real is not none else '?' }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{# ════════════════════════════════════════════════
+   7.  GOLEADOR
+   ════════════════════════════════════════════════ #}
+<h3 id="s-goleador">7 — Máximo goleador</h3>
+<div class="scroll-x">
+<table class="ct">
+  <thead>
+    <tr>
+      {% for p in participantes %}<th class="pcol" title="{{ p.nombre }}">{{ ncorto(p.nombre) }}</th>{% endfor %}
+      <th class="pcol real-col">Marcados correctos</th>
+    </tr>
+  </thead>
+  <tbody>
+  <tr>
+    {% set correctos = resultados.goleador_correctos %}
+    {% for p in participantes %}
+      {% set pred = (p.fase_final.goleador or '') %}
+      {% if correctos and pred %}
+        {% if pred.strip() in correctos %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+      {% else %}<td class="pcell">{% endif %}
+      {{ pred or '·' }}
+      </td>
+    {% endfor %}
+    <td class="pcell real-col" style="font-size:.75rem">{{ correctos|join(', ') if correctos else '?' }}</td>
+  </tr>
+  </tbody>
+</table>
+</div>
+
+{# ════════════════════════════════════════════════
+   8.  TRÉBOLES
+   ════════════════════════════════════════════════ #}
+<h3 id="s-treboles">8 — Tréboles</h3>
+<div class="scroll-x">
+<table class="ct">
+  <thead>
+    <tr>
+      <th class="fcol" style="min-width:200px">Trébol (opciones)</th>
+      {% for p in participantes %}<th class="pcol" title="{{ p.nombre }}">{{ ncorto(p.nombre) }}</th>{% endfor %}
+      <th class="pcol real-col">Ganador(es)</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for trio in P.TREBOLES %}
+  {% set i = loop.index0 %}
+  {% set num = loop.index %}
+  {% set ganadores = resultados.trebol_ganadores.get(num|string, []) %}
+  <tr>
+    <td class="fcol" style="min-width:200px">
+      <strong>{{ num }}</strong>:
+      {% for opcion in trio %}
+      {% set j = loop.index0 %}
+      <span style="{% if j in ganadores %}color:#1a7a3c;font-weight:700;{% else %}color:#aaa;{% endif %}" title="{{ opcion }}">{{ opcion }}</span>{% if not loop.last %} / {% endif %}
+      {% endfor %}
+    </td>
+    {% for p in participantes %}
+      {% set treb = p.fase_final.treboles %}
+      {% set idx = treb[i] if treb|length > i else none %}
+      {% set es_ok = idx is not none and idx in ganadores %}
+      {% if ganadores and idx is not none %}
+        {% if es_ok %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
+      {% else %}<td class="pcell">{% endif %}
+      {% if idx is not none %}
+        <span style="{% if es_ok %}font-weight:700;{% elif ganadores %}opacity:.45;{% endif %}" title="{{ trio[idx] }}">{{ trio[idx] }}</span>
+      {% else %}<span class="bn">·</span>{% endif %}
+      </td>
+    {% endfor %}
+    <td class="pcell real-col" style="font-size:.73rem">
+      {% if ganadores %}
+        {% for gi in ganadores %}{{ trio[gi] }}{% if not loop.last %}, {% endif %}{% endfor %}
+      {% else %}?{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% endblock %}

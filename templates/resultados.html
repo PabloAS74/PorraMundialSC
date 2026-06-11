@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block contenido %}
+
+<h2 id="grupos">1. Fase de grupos</h2>
+<p class="mini">Marca el 1X2 de cada partido jugado y, cuando acabe cada grupo, su orden final.
+El marcador exacto solo se pide en los 12 partidos del bonus.</p>
+
+<form method="post" action="{{ url_for('guardar_grupos') }}">
+<div class="grid g3">
+  {% for letra, partidos in P.PARTIDOS_GRUPO.items() %}
+  <div class="card">
+    <h3>Grupo {{ letra }}</h3>
+    {% for loc, vis in partidos %}
+      {% set clave = loc ~ '|' ~ vis %}
+      {% set v = r.grupos_1x2.get(clave) %}
+      <div class="partido">
+        <span class="eq">{{ loc }} - {{ vis }}</span>
+        <span class="unxdos">
+          {% for op in ['1', 'X', '2'] %}
+          <label><input type="radio" name="1x2|{{ clave }}" value="{{ op }}"
+            {% if v == op %}checked{% endif %}>{{ op }}</label>
+          {% endfor %}
+          <a href="#" class="borrar mini" title="Quitar">×</a>
+        </span>
+      </div>
+    {% endfor %}
+    <p class="mini" style="margin-bottom:2px">Orden final del grupo:</p>
+    {% set orden = r.orden.get(letra, [none, none, none]) %}
+    {% for i in range(3) %}
+      <select name="orden|{{ letra }}|{{ i }}">
+        <option value="">{{ i + 1 }}º</option>
+        {% for eq in P.GRUPOS[letra] %}
+        <option value="{{ eq }}" {% if orden[i] == eq %}selected{% endif %}>{{ eq }}</option>
+        {% endfor %}
+      </select>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h3>Bonus de la primera fase</h3>
+  <div class="grid g3">
+    <div>
+      <p><strong>Resultados exactos</strong> (los 12 del formulario):</p>
+      {% for loc, vis in P.EXACTOS_CAMPOS.values() %}
+        {% set clave = loc ~ '|' ~ vis %}
+        {% set m = r.exactos.get(clave) %}
+        <div class="partido">
+          <span class="eq">{{ loc }}</span>
+          <input type="number" min="0" name="ex1|{{ clave }}" value="{{ m[0] if m else '' }}">
+          -
+          <input type="number" min="0" name="ex2|{{ clave }}" value="{{ m[1] if m else '' }}">
+          <span class="eq v">{{ vis }}</span>
+        </div>
+      {% endfor %}
+    </div>
+    <div>
+      <p><strong>Grupo más goleador</strong> (varios si empatan):</p>
+      {% for letra in P.GRUPOS %}
+        <label class="chip"><input type="checkbox" name="grupo_mas" value="{{ letra }}"
+          {% if letra in r.grupo_mas %}checked{% endif %}>{{ letra }}</label>
+      {% endfor %}
+      <p><strong>Grupo menos goleador:</strong></p>
+      {% for letra in P.GRUPOS %}
+        <label class="chip"><input type="checkbox" name="grupo_menos" value="{{ letra }}"
+          {% if letra in r.grupo_menos %}checked{% endif %}>{{ letra }}</label>
+      {% endfor %}
+    </div>
+    <div>
+      <p><strong>Selección más goleadora</strong> (de las 11 del bonus):</p>
+      {% for eq in P.BONUS_EQUIPOS %}
+        <label style="display:block"><input type="checkbox" name="equipo_mas_goles" value="{{ eq }}"
+          {% if eq in r.equipo_mas_goles %}checked{% endif %}> {{ eq }}</label>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<p><button type="submit">Guardar fase de grupos</button></p>
+</form>
+
+<h2 id="eliminatorias">2. Eliminatorias</h2>
+<p class="mini">Apunta los equipos que van pasando a cada ronda (da igual el orden)
+y los contadores de goles que pide el formulario.</p>
+
+<form method="post" action="{{ url_for('guardar_eliminatorias') }}">
+{% set rondas = [("octavos", "Clasificados para 1/8 de final", 16),
+                 ("cuartos", "Clasificados para 1/4 de final", 8),
+                 ("semifinales", "Clasificados para semifinales", 4),
+                 ("final", "Clasificados para la final", 2)] %}
+{% for ronda, titulo, n in rondas %}
+<div class="card">
+  <h3>{{ titulo }} ({{ n }})</h3>
+  {% set lista = r.clasificados.get(ronda, []) %}
+  {% for i in range(n) %}
+    <select name="clasif|{{ ronda }}|{{ i }}">
+      <option value=""></option>
+      {% for eq in P.TODOS_EQUIPOS %}
+      <option {% if lista and lista[i] == eq %}selected{% endif %}>{{ eq }}</option>
+      {% endfor %}
+    </select>
+  {% endfor %}
+  {% if ronda == "octavos" %}
+    <p>¿En cuántos partidos de 1/16 se marcaron 3+ goles?
+      <input type="number" min="0" max="16" name="goles3|dieciseisavos"
+        value="{{ r.goles3.get('dieciseisavos', '') }}"></p>
+  {% elif ronda == "cuartos" %}
+    <p>¿En cuántos partidos de 1/8 se marcaron 3+ goles?
+      <input type="number" min="0" max="8" name="goles3|octavos"
+        value="{{ r.goles3.get('octavos', '') }}"></p>
+  {% elif ronda == "semifinales" %}
+    <p>¿En cuántos partidos de 1/4 se marcaron 3+ goles?
+      <input type="number" min="0" max="4" name="goles3|cuartos"
+        value="{{ r.goles3.get('cuartos', '') }}"></p>
+  {% elif ronda == "final" %}
+    <p>Goles totales en las dos semifinales:
+      <input type="number" min="0" name="goles_semifinales"
+        value="{{ r.goles_semifinales if r.goles_semifinales is not none else '' }}"></p>
+  {% endif %}
+</div>
+{% endfor %}
+<div class="card">
+  <h3>Final</h3>
+  <p>Campeón:
+    <select name="campeon">
+      <option value=""></option>
+      {% for eq in P.TODOS_EQUIPOS %}
+      <option {% if r.campeon == eq %}selected{% endif %}>{{ eq }}</option>
+      {% endfor %}
+    </select>
+    &nbsp; Goles en la final:
+    <input type="number" min="0" name="goles_final"
+      value="{{ r.goles_final if r.goles_final is not none else '' }}">
+  </p>
+</div>
+<p><button type="submit">Guardar eliminatorias</button></p>
+</form>
+
+<h2 id="premios">3. Goleador y tréboles</h2>
+<form method="post" action="{{ url_for('guardar_premios') }}">
+<div class="card">
+  <h3>Máximo goleador (40 pts)</h3>
+  <p class="mini">Marca los pronósticos que resulten correctos (varios si hay empate de goleadores).</p>
+  {% for g in goleadores %}
+    <label style="display:block">
+      <input type="checkbox" name="goleador" value="{{ g }}"
+        {% if g in r.goleador_correctos %}checked{% endif %}> {{ g }}
+    </label>
+  {% endfor %}
+</div>
+<div class="card">
+  <h3>Tréboles (3 pts cada uno)</h3>
+  <p class="mini">Marca el más goleador de cada trío en el Mundial (varios si empatan).</p>
+  <table>
+    {% for trio in P.TREBOLES %}
+    {% set num = loop.index %}
+    {% set ganadores = r.trebol_ganadores.get(num|string, []) %}
+    <tr>
+      <td>{{ num }}</td>
+      {% for opcion in trio %}
+      <td><label><input type="checkbox" name="trebol|{{ num }}" value="{{ loop.index0 }}"
+        {% if loop.index0 in ganadores %}checked{% endif %}> {{ opcion }}</label></td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+<p><button type="submit">Guardar goleador y tréboles</button></p>
+</form>
+
+<script>
+// la × quita la selección 1X2 de un partido (por si se marca por error)
+document.querySelectorAll('.borrar').forEach(function (a) {
+  a.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    a.closest('.unxdos').querySelectorAll('input[type=radio]').forEach(function (radio) {
+      radio.checked = false;
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>{{ fila.nombre }} — {{ fila.total }} puntos</h2>
+<p class="mini">1ª fase: {{ fila.fase1 }} · 2ª fase: {{ fila.fase2 }} · Fase final: {{ fila.fase_final }}</p>
+
+<table>
+  <tr><th>Fase</th><th>Concepto</th><th>Pronóstico</th><th>Real</th><th class="num">Puntos</th><th class="num">Máx.</th></tr>
+  {% for c in fila.conceptos %}
+  <tr>
+    <td>{{ c.fase }}</td>
+    <td>{{ c.concepto }}</td>
+    <td>{{ c.pronostico if c.pronostico is not none else '—' }}</td>
+    <td>{% if c.real is not none %}{{ c.real }}{% else %}<span class="pend">pendiente</span>{% endif %}</td>
+    <td class="num">{% if c.puntos %}<span class="ok">{{ c.puntos }}</span>{% else %}{{ c.puntos }}{% endif %}</td>
+    <td class="num mini">{{ c.maximo }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>Pronósticos del cuadro</h2>
+<div class="card">
+  <p><strong>Clasificados 1/8:</strong> {{ pred.segunda.clasif_octavos | select | join(', ') }}</p>
+  <p><strong>Clasificados 1/4:</strong> {{ pred.segunda.clasif_cuartos | select | join(', ') }}</p>
+  <p><strong>Semifinalistas:</strong> {{ pred.segunda.clasif_semifinales | select | join(', ') }}</p>
+  <p><strong>Finalistas:</strong> {{ pred.segunda.clasif_final | select | join(', ') }}</p>
+  <p><strong>Campeón:</strong> {{ pred.segunda.campeon }} · <strong>Máx. goleador:</strong> {{ pred.fase_final.goleador }}</p>
+</div>
+
+<h2>Tréboles</h2>
+<div class="card">
+  <table>
+    {% for trio in P.TREBOLES %}
+    {% set idx = pred.fase_final.treboles[loop.index0] %}
+    {% set ganadores = resultados.trebol_ganadores.get((loop.index)|string, []) %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      {% for opcion in trio %}
+      <td {% if idx == loop.index0 %}style="font-weight:700; color: var(--verde)"{% endif %}>
+        {{ opcion }}{% if loop.index0 in ganadores %} 🏆{% endif %}
+      </td>
+      {% endfor %}
+      <td class="num">{% if idx is not none and idx in ganadores %}<span class="ok">+3</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="mini">En negrita, la opción elegida; 🏆 = ganador real del trío.</p>
+</div>
+{% endblock %}

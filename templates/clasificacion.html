@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Clasificación</h2>
+<p class="mini">Porras extraídas el {{ generado }}. Pincha en un nombre para ver el desglose.</p>
+<table>
+  <tr>
+    <th>#</th><th>Participante</th>
+    <th class="num">1ª fase</th><th class="num">2ª fase</th>
+    <th class="num">Fase final</th><th class="num">Total</th>
+  </tr>
+  {% for f in filas %}
+  <tr {% if loop.index == 1 %}class="pos1"{% endif %}>
+    <td>{{ loop.index }}</td>
+    <td><a href="{{ url_for('detalle', nombre=f.nombre) }}">{{ f.nombre }}</a></td>
+    <td class="num">{{ f.fase1 }}</td>
+    <td class="num">{{ f.fase2 }}</td>
+    <td class="num">{{ f.fase_final }}</td>
+    <td class="num"><strong>{{ f.total }}</strong></td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% if avisos %}
+<div class="aviso">
+  <strong>Avisos de la extracción</strong> (campos que conviene revisar en el PDF):
+  <ul>
+  {% for nombre, lista in avisos.items() %}
+    {% for a in lista %}<li><strong>{{ nombre }}</strong>: {{ a }}</li>{% endfor %}
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}
