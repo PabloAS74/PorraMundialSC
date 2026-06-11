@@ -27,7 +27,7 @@
       "Qatar|Suiza": "2",
       "Suiza|Bosnia": "1",
       "Canadá|Qatar": "X",
-      "Bosnia|Qatar": null,
+      "Bosnia|Qatar": "1",
       "Suiza|Canadá": "X"
      },
      "orden": [
