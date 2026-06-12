@@ -32,3 +32,6 @@ Desktop.ini
 
 # Local PDF input/output scratch files
 *.pdf
+
+# Datos
+data/
