@@ -9,19 +9,39 @@ orden de cada grupo, clasificados de cada ronda y contadores de goles.
 """
 import json
 import os
+from datetime import datetime
+from functools import wraps
 from pathlib import Path
 
-from flask import Flask, render_template, request, redirect, url_for, abort
+from flask import Flask, render_template, request, redirect, url_for, abort, flash, session
+from werkzeug.utils import secure_filename
 
+import extraer
 import plantilla as P
 import puntuacion
+import dotenv
+
+dotenv.load_dotenv()
 
 BASE = Path(__file__).parent
 DATA = BASE / "data"
 PREDICCIONES = DATA / "predicciones.json"
 RESULTADOS = DATA / "resultados.json"
+SUBIDAS = DATA / "subidas"
+PASSWORD = os.environ.get("PASSWORD")
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "porra-mundial-local")
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
+
+
+def requiere_login(vista):
+    @wraps(vista)
+    def wrapper(*args, **kwargs):
+        if not session.get("autenticado"):
+            return redirect(url_for("login", next=request.full_path))
+        return vista(*args, **kwargs)
+    return wrapper
 
 
 def resultados_vacios():
@@ -60,6 +80,55 @@ def cargar_predicciones():
     return json.loads(PREDICCIONES.read_text(encoding="utf-8"))
 
 
+def guardar_predicciones(datos):
+    DATA.mkdir(exist_ok=True)
+    PREDICCIONES.write_text(json.dumps(datos, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def predicciones_vacias():
+    return {
+        "generado": None,
+        "carpeta": "subidas desde la web",
+        "participantes": [],
+        "avisos": {},
+    }
+
+
+def ruta_subida_segura(nombre_archivo):
+    SUBIDAS.mkdir(parents=True, exist_ok=True)
+    nombre = secure_filename(nombre_archivo) or "porra.pdf"
+    if not nombre.lower().endswith(".pdf"):
+        nombre = f"{nombre}.pdf"
+    ruta = SUBIDAS / nombre
+    contador = 1
+    while ruta.exists():
+        ruta = SUBIDAS / f"{Path(nombre).stem}_{contador}{Path(nombre).suffix}"
+        contador += 1
+    return ruta
+
+
+def next_seguro(valor):
+    return valor if valor and valor.startswith("/") and not valor.startswith("//") else url_for("home")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        if request.form.get("password") == PASSWORD:
+            session["autenticado"] = True
+            flash("Sesión iniciada correctamente.", "ok")
+            return redirect(next_seguro(request.form.get("next")))
+        flash("Contraseña incorrecta.", "error")
+    return render_template("login.html", next=next_seguro(request.args.get("next")))
+
+
+@app.route("/logout")
+def logout():
+    session.pop("autenticado", None)
+    flash("Sesión cerrada.", "ok")
+    return redirect(url_for("home"))
+
+
 @app.route("/")
 def home():
     datos = cargar_predicciones()
@@ -86,6 +155,7 @@ def detalle(nombre):
 
 
 @app.route("/resultados", methods=["GET"])
+@requiere_login
 def resultados_vista():
     datos = cargar_predicciones()
     resultados = cargar_resultados()
@@ -96,6 +166,7 @@ def resultados_vista():
 
 
 @app.route("/resultados/grupos", methods=["POST"])
+@requiere_login
 def guardar_grupos():
     r = cargar_resultados()
     for letra, partidos in P.PARTIDOS_GRUPO.items():
@@ -129,6 +200,7 @@ def guardar_grupos():
 
 
 @app.route("/resultados/eliminatorias", methods=["POST"])
+@requiere_login
 def guardar_eliminatorias():
     r = cargar_resultados()
     tam = {"octavos": 16, "cuartos": 8, "semifinales": 4, "final": 2}
@@ -154,6 +226,7 @@ def guardar_eliminatorias():
 
 
 @app.route("/resultados/premios", methods=["POST"])
+@requiere_login
 def guardar_premios():
     r = cargar_resultados()
     r["goleador_correctos"] = request.form.getlist("goleador")
@@ -165,6 +238,57 @@ def guardar_premios():
     r["trebol_ganadores"] = trebol
     guardar_resultados(r)
     return redirect(url_for("resultados_vista") + "#premios")
+
+
+@app.route("/participantes/nuevo", methods=["GET", "POST"])
+@requiere_login
+def subir_participante():
+    if request.method == "POST":
+        archivo = request.files.get("pdf")
+        if not archivo or not archivo.filename:
+            flash("Selecciona un PDF de una porra.", "error")
+            return redirect(url_for("subir_participante"))
+        if not archivo.filename.lower().endswith(".pdf"):
+            flash("El archivo debe ser un PDF.", "error")
+            return redirect(url_for("subir_participante"))
+
+        ruta = ruta_subida_segura(archivo.filename)
+        archivo.save(ruta)
+        try:
+            pred, avisos = extraer.extraer_pdf(ruta)
+            extraer.aplicar_correcciones([pred])
+        except Exception as exc:
+            ruta.unlink(missing_ok=True)
+            flash(f"No se pudo extraer la porra: {exc}", "error")
+            return redirect(url_for("subir_participante"))
+
+        datos = cargar_predicciones() or predicciones_vacias()
+        participantes = datos.setdefault("participantes", [])
+        reemplazado = False
+        for i, participante in enumerate(participantes):
+            if participante.get("nombre") == pred["nombre"] or participante.get("archivo") == pred["archivo"]:
+                participantes[i] = pred
+                reemplazado = True
+                break
+        if not reemplazado:
+            participantes.append(pred)
+
+        avisos_por_participante = datos.setdefault("avisos", {})
+        if avisos:
+            avisos_por_participante[pred["nombre"]] = avisos
+        else:
+            avisos_por_participante.pop(pred["nombre"], None)
+        datos["generado"] = datetime.now().isoformat(timespec="seconds")
+        guardar_predicciones(datos)
+
+        accion = "actualizada" if reemplazado else "añadida"
+        extra = f" con {len(avisos)} aviso(s)" if avisos else ""
+        flash(f"Porra de {pred['nombre']} {accion}{extra}.", "ok")
+        return redirect(url_for("subir_participante"))
+
+    datos = cargar_predicciones() or predicciones_vacias()
+    participantes = sorted(p["nombre"] for p in datos.get("participantes", []) if p.get("nombre"))
+    return render_template("subir_participante.html", participantes=participantes)
 
 
 @app.route("/comparativa")

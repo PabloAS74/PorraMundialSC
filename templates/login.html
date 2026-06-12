@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block contenido %}
+
+<div class="card" style="max-width:420px">
+  <h2>Acceso privado</h2>
+  <form method="post" action="{{ url_for('login') }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <p>
+      <label for="password"><strong>Contraseña</strong></label><br>
+      <input id="password" type="password" name="password" autofocus required>
+    </p>
+    <p><button type="submit">Entrar</button></p>
+  </form>
+</div>
+
+{% endblock %}

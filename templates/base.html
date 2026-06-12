@@ -28,6 +28,8 @@
   button { background: var(--verde); color: #fff; border: 0; padding: 8px 18px; border-radius: 4px; font-size: 1rem; cursor: pointer; }
   button:hover { background: #145e2e; }
   .aviso { background: #fff4d6; border-left: 4px solid var(--oro); padding: 8px 12px; margin: 10px 0; }
+  .aviso.error { background: #ffe5e0; border-left-color: #c03a15; }
+  .aviso.ok { background: #e8f6ee; border-left-color: var(--verde); color: #222; }
   .ok { color: var(--verde); font-weight: 700; }
   .pend { color: #999; }
   .partido { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-size: .92rem; }
@@ -49,10 +51,23 @@
   <nav>
     <a href="{{ url_for('home') }}">Clasificación</a>
     <a href="{{ url_for('comparativa') }}">Comparativa</a>
-    <a href="{{ url_for('resultados_vista') }}">Meter resultados</a>
+    {% if session.get('autenticado') %}
+      <a href="{{ url_for('subir_participante') }}">Añadir participante</a>
+      <a href="{{ url_for('resultados_vista') }}">Meter resultados</a>
+      <a href="{{ url_for('logout') }}">Salir</a>
+    {% else %}
+      <a href="{{ url_for('login', next=url_for('resultados_vista')) }}">Entrar</a>
+    {% endif %}
   </nav>
 </header>
 <main>
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% if mensajes %}
+    {% for categoria, mensaje in mensajes %}
+      <div class="aviso {{ categoria }}">{{ mensaje }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 {% block contenido %}{% endblock %}
 </main>
 </body>

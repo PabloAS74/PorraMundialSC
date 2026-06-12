@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block contenido %}
+
+<h2>Añadir participante</h2>
+
+<div class="card">
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('subir_participante') }}">
+    <p>
+      <label for="pdf"><strong>PDF de la porra</strong></label><br>
+      <input id="pdf" type="file" name="pdf" accept="application/pdf,.pdf" required>
+    </p>
+    <p class="mini">Si el participante ya existe por nombre o archivo, se actualiza su porra.</p>
+    <p><button type="submit">Subir e ingerir PDF</button></p>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Participantes actuales ({{ participantes|length }})</h3>
+  {% if participantes %}
+    <ul>
+      {% for nombre in participantes %}
+        <li>{{ nombre }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="pend">Todavía no hay participantes cargados.</p>
+  {% endif %}
+</div>
+
+{% endblock %}
