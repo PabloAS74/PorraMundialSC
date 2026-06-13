@@ -5,14 +5,14 @@
   .comp-nav a { background:#e8f5e9; border:1px solid #a5d6a7; border-radius:4px; padding:5px 13px; text-decoration:none; color:#1a7a3c; font-size:.88rem; font-weight:600; }
   .comp-nav a:hover { background:#c8e6c9; }
 
-  .scroll-x { overflow-x:auto; margin-bottom:20px; }
+  .scroll-x { overflow:auto; max-height:78vh; margin-bottom:20px; }
   .ct { border-collapse:collapse; font-size:.8rem; }
   .ct th, .ct td { padding:4px 8px; border:1px solid #ddd; white-space:nowrap; }
-  .ct thead th { background:#efe9d8; position:sticky; top:0; z-index:2; }
+  .ct thead th { background:#efe9d8; position:sticky; top:0; z-index:5; box-shadow:0 2px 3px rgba(0,0,0,.12); }
   .ct .pcol { text-align:center; font-weight:700; font-size:.75rem; max-width:70px; overflow:hidden; text-overflow:ellipsis; }
   .ct .pcell { text-align:center; min-width:34px; }
   .ct .fcol { position:sticky; left:0; z-index:1; background:#fff; font-size:.78rem; min-width:160px; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
-  .ct thead .fcol { background:#efe9d8; z-index:3; }
+  .ct thead .fcol { background:#efe9d8; z-index:6; }
   .ct .fsep td { background:#1a7a3c; color:#fff; font-weight:700; font-size:.78rem; padding:3px 10px; }
   .ct .real-col { background:#f0f8ff; font-weight:600; }
 
@@ -40,7 +40,6 @@
 </style>
 
 <h2>Comparativa de predicciones</h2>
-{% if generado %}<p class="mini">Datos del {{ generado }}</p>{% endif %}
 
 <div class="comp-nav">
   <a href="#s-grupos">1X2 grupos</a>
