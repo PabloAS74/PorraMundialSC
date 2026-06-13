@@ -5,7 +5,7 @@
   .comp-nav a { background:#e8f5e9; border:1px solid #a5d6a7; border-radius:4px; padding:5px 13px; text-decoration:none; color:#1a7a3c; font-size:.88rem; font-weight:600; }
   .comp-nav a:hover { background:#c8e6c9; }
 
-  .scroll-x { overflow:auto; max-height:78vh; margin-bottom:20px; }
+  .scroll-x { overflow-x:auto; margin-bottom:20px; }
   .ct { border-collapse:collapse; font-size:.8rem; }
   .ct th, .ct td { padding:4px 8px; border:1px solid #ddd; white-space:nowrap; }
   .ct thead th { background:#efe9d8; position:sticky; top:0; z-index:5; box-shadow:0 2px 3px rgba(0,0,0,.12); }
@@ -37,6 +37,22 @@
   .grid-grupos { display:grid; gap:16px; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); margin-bottom:20px; }
   .card-grupo h4 { margin:0 0 6px; font-size:.9rem; color:var(--verde); }
   .card-grupo .equips { font-size:.73rem; color:#888; }
+  .floating-head {
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:50;
+    display:none;
+    overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,.18);
+  }
+  .floating-head table {
+    margin:0;
+    box-shadow:none;
+  }
+  .floating-head th {
+    background:#efe9d8;
+  }
 </style>
 
 <h2>Comparativa de predicciones</h2>
@@ -85,9 +101,8 @@
       <td class="fcol">{{ loc }} – {{ vis }}</td>
       {% for p in participantes %}
         {% set pred = p.grupos[letra].signos.get(clave) %}
-        {% if real and pred %}
-          {% if pred == real %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-        {% else %}<td class="pcell">{% endif %}
+        {% set cls = 'pcell ok' if real and pred and pred == real else ('pcell err' if real and pred else 'pcell') %}
+        <td class="{{ cls }}">
         {% if pred %}<span class="b{{ pred }}">{{ pred }}</span>{% else %}<span class="bn">·</span>{% endif %}
         </td>
       {% endfor %}
@@ -122,9 +137,8 @@
       <td class="fcol" style="min-width:90px"><strong>{{ pos + 1 }}°</strong></td>
       {% for p in participantes %}
         {% set eq = p.grupos[letra].orden[pos] if p.grupos[letra].orden|length > pos else none %}
-        {% if real_eq and eq %}
-          {% if P.normalizar(eq) == P.normalizar(real_eq) %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-        {% else %}<td class="pcell">{% endif %}
+        {% set cls = 'pcell ok' if real_eq and eq and P.normalizar(eq) == P.normalizar(real_eq) else ('pcell err' if real_eq and eq else 'pcell') %}
+        <td class="{{ cls }}">
         {{ eq or '·' }}
         </td>
       {% endfor %}
@@ -156,9 +170,8 @@
     <td class="fcol">{{ ex.label }}</td>
     {% for p in participantes %}
       {% set m = p.bonus.exactos.get(ex.clave) %}
-      {% if real_m and m %}
-        {% if m[0] == real_m[0] and m[1] == real_m[1] %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-      {% else %}<td class="pcell">{% endif %}
+      {% set cls = 'pcell ok' if real_m and m and m[0] == real_m[0] and m[1] == real_m[1] else ('pcell err' if real_m and m else 'pcell') %}
+      <td class="{{ cls }}">
       {% if m %}{{ m[0] }}-{{ m[1] }}{% else %}<span class="bn">·</span>{% endif %}
       </td>
     {% endfor %}
@@ -189,9 +202,8 @@
     <td class="fcol">Grupo más goleador</td>
     {% for p in participantes %}
       {% set pred = p.bonus.grupo_mas %}
-      {% if real_gmas and pred %}
-        {% if pred in real_gmas %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-      {% else %}<td class="pcell">{% endif %}
+      {% set cls = 'pcell ok' if real_gmas and pred and pred in real_gmas else ('pcell err' if real_gmas and pred else 'pcell') %}
+      <td class="{{ cls }}">
       {{ pred or '·' }}
       </td>
     {% endfor %}
@@ -203,9 +215,8 @@
     <td class="fcol">Grupo menos goleador</td>
     {% for p in participantes %}
       {% set pred = p.bonus.grupo_menos %}
-      {% if real_gmenos and pred %}
-        {% if pred in real_gmenos %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-      {% else %}<td class="pcell">{% endif %}
+      {% set cls = 'pcell ok' if real_gmenos and pred and pred in real_gmenos else ('pcell err' if real_gmenos and pred else 'pcell') %}
+      <td class="{{ cls }}">
       {{ pred or '·' }}
       </td>
     {% endfor %}
@@ -217,9 +228,8 @@
     <td class="fcol">Selección más goleadora</td>
     {% for p in participantes %}
       {% set pred = p.bonus.equipo_mas_goles %}
-      {% if real_emg and pred %}
-        {% if pred in real_emg %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-      {% else %}<td class="pcell">{% endif %}
+      {% set cls = 'pcell ok' if real_emg and pred and pred in real_emg else ('pcell err' if real_emg and pred else 'pcell') %}
+      <td class="{{ cls }}">
       {{ pred or '·' }}
       </td>
     {% endfor %}
@@ -248,9 +258,8 @@
     {% set real_c = resultados.campeon %}
     {% for p in participantes %}
       {% set pred = p.segunda.campeon %}
-      {% if real_c and pred %}
-        {% if P.normalizar(pred) == P.normalizar(real_c) %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-      {% else %}<td class="pcell">{% endif %}
+      {% set cls = 'pcell ok' if real_c and pred and P.normalizar(pred) == P.normalizar(real_c) else ('pcell err' if real_c and pred else 'pcell') %}
+      <td class="{{ cls }}">
       {{ pred or '·' }}
       </td>
     {% endfor %}
@@ -280,13 +289,12 @@
     {% for p in participantes %}
       {% set lista = p.segunda['clasif_' + ronda] %}
       {% set marcado = equipo in lista %}
+      {% set cls = 'pcell ok' if info.real and marcado and en_real else ('pcell err' if info.real and marcado and not en_real else 'pcell') %}
+      <td class="{{ cls }}">
       {% if info.real %}
-        {% if marcado and en_real %}<td class="pcell ok">✓
-        {% elif marcado and not en_real %}<td class="pcell err">✓
-        {% elif not marcado and en_real %}<td class="pcell">·
-        {% else %}<td class="pcell">·{% endif %}
+        {% if marcado %}✓{% else %}·{% endif %}
       {% else %}
-        {% if marcado %}<td class="pcell">✓{% else %}<td class="pcell"><span class="bn">·</span>{% endif %}
+        {% if marcado %}✓{% else %}<span class="bn">·</span>{% endif %}
       {% endif %}
       </td>
     {% endfor %}
@@ -317,9 +325,8 @@
     <td class="fcol">{{ g.label }}</td>
     {% for p in participantes %}
       {% set pred = p.segunda[g.campo] %}
-      {% if g.real is not none and pred is not none %}
-        {% if pred == g.real %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-      {% else %}<td class="pcell">{% endif %}
+      {% set cls = 'pcell ok' if g.real is not none and pred is not none and pred == g.real else ('pcell err' if g.real is not none and pred is not none else 'pcell') %}
+      <td class="{{ cls }}">
       {{ pred if pred is not none else '·' }}
       </td>
     {% endfor %}
@@ -347,9 +354,8 @@
     {% set correctos = resultados.goleador_correctos %}
     {% for p in participantes %}
       {% set pred = (p.fase_final.goleador or '') %}
-      {% if correctos and pred %}
-        {% if pred.strip() in correctos %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-      {% else %}<td class="pcell">{% endif %}
+      {% set cls = 'pcell ok' if correctos and pred and pred.strip() in correctos else ('pcell err' if correctos and pred else 'pcell') %}
+      <td class="{{ cls }}">
       {{ pred or '·' }}
       </td>
     {% endfor %}
@@ -389,9 +395,8 @@
       {% set treb = p.fase_final.treboles %}
       {% set idx = treb[i] if treb|length > i else none %}
       {% set es_ok = idx is not none and idx in ganadores %}
-      {% if ganadores and idx is not none %}
-        {% if es_ok %}<td class="pcell ok">{% else %}<td class="pcell err">{% endif %}
-      {% else %}<td class="pcell">{% endif %}
+      {% set cls = 'pcell ok' if ganadores and idx is not none and es_ok else ('pcell err' if ganadores and idx is not none else 'pcell') %}
+      <td class="{{ cls }}">
       {% if idx is not none %}
         <span style="{% if es_ok %}font-weight:700;{% elif ganadores %}opacity:.45;{% endif %}" title="{{ trio[idx] }}">{{ trio[idx] }}</span>
       {% else %}<span class="bn">·</span>{% endif %}
@@ -407,5 +412,78 @@
   </tbody>
 </table>
 </div>
+
+<div id="floatingHead" class="floating-head" aria-hidden="true"></div>
+
+<script>
+(function () {
+  const floating = document.getElementById('floatingHead');
+  const wrappers = Array.from(document.querySelectorAll('.scroll-x'));
+  let active = null;
+
+  function copyColumnWidths(sourceTable, cloneTable) {
+    const sourceCells = sourceTable.querySelectorAll('thead th');
+    const cloneCells = cloneTable.querySelectorAll('thead th');
+    cloneTable.style.width = sourceTable.getBoundingClientRect().width + 'px';
+    sourceCells.forEach(function (cell, i) {
+      const width = cell.getBoundingClientRect().width + 'px';
+      cloneCells[i].style.width = width;
+      cloneCells[i].style.minWidth = width;
+      cloneCells[i].style.maxWidth = width;
+    });
+  }
+
+  function showFor(wrapper) {
+    const table = wrapper.querySelector('table.ct');
+    if (!table) return;
+    const rect = wrapper.getBoundingClientRect();
+    const headRect = table.tHead.getBoundingClientRect();
+    const visible = rect.top < 0 && rect.bottom > headRect.height + 8;
+
+    if (!visible) {
+      floating.style.display = 'none';
+      active = null;
+      return;
+    }
+
+    if (active !== wrapper) {
+      floating.innerHTML = '';
+      const clone = table.cloneNode(false);
+      clone.className = table.className;
+      clone.appendChild(table.tHead.cloneNode(true));
+      floating.appendChild(clone);
+      active = wrapper;
+    }
+
+    const cloneTable = floating.querySelector('table');
+    copyColumnWidths(table, cloneTable);
+    floating.style.display = 'block';
+    floating.style.left = rect.left + 'px';
+    floating.style.width = rect.width + 'px';
+    cloneTable.style.transform = 'translateX(' + (-wrapper.scrollLeft) + 'px)';
+  }
+
+  function updateFloatingHead() {
+    const current = wrappers.find(function (wrapper) {
+      const rect = wrapper.getBoundingClientRect();
+      const table = wrapper.querySelector('table.ct');
+      return table && rect.top < 0 && rect.bottom > table.tHead.getBoundingClientRect().height + 8;
+    });
+    if (current) {
+      showFor(current);
+    } else {
+      floating.style.display = 'none';
+      active = null;
+    }
+  }
+
+  window.addEventListener('scroll', updateFloatingHead, { passive: true });
+  window.addEventListener('resize', updateFloatingHead);
+  wrappers.forEach(function (wrapper) {
+    wrapper.addEventListener('scroll', updateFloatingHead, { passive: true });
+  });
+  updateFloatingHead();
+})();
+</script>
 
 {% endblock %}
