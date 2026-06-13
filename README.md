@@ -20,35 +20,26 @@ clasificación automáticamente durante el torneo.
    - al final, máximo goleador y tréboles (marcando los pronósticos acertados).
 4. La **Clasificación** se recalcula sola. Pincha en un nombre para ver el desglose de puntos.
 
-## Cargar las porras (PDFs)
+### Actualización automática con football-data.org
 
-Cuando lleguen porras nuevas, déjalas en la carpeta de OneDrive y ejecuta:
+Si existe `API-KEY` en `.env`, al arrancar `python app.py` se lanza una
+actualización automática cada 30 minutos. Eso consume como máximo 48 consultas al
+día, por debajo del límite gratuito de 100.
+
+Variables opcionales:
 
 ```
-python extraer.py "C:\Users\andre\OneDrive\Escritorio\Porras Mundial SC"
+FOOTBALL_DATA_DATE_FROM=2026-06-11
+FOOTBALL_DATA_DATE_TO=2026-07-19
+FOOTBALL_DATA_COMPETITIONS=WC
+FOOTBALL_DATA_INTERVAL_SECONDS=1800
 ```
 
-- Lee tanto PDFs con formulario como PDFs "aplanados" (impresos a PDF): para estos
-  últimos usa `data/geometria.json` y detecta las marcas por posición.
-- Los problemas encontrados (campos vacíos, valores ilegibles) salen como avisos en
-  la consola y también en la página de Clasificación.
+La sincronización usa una sola llamada a `GET https://api.football-data.org/v4/matches`
+con la cabecera `X-Auth-Token`, actualiza `data/resultados.json` y guarda el estado
+en la clave `_football_data`. Desde
+**Meter resultados** también hay un botón para forzar una actualización manual.
 
-### Correcciones manuales
-
-Si una porra tiene un dato mal/ilegible (p. ej. el 3º del grupo J de Calceto),
-créase `data/correcciones.json` con los campos a sobreescribir y vuelve a ejecutar
-`extraer.py`:
-
-```json
-{
-  "Calceto": {
-    "grupos": { "J": { "orden": ["Argentina", "Austria", "Jordania"] } }
-  }
-}
-```
-
-La clave es el nombre del participante (o el nombre del archivo PDF) y dentro va la
-misma estructura que en `data/predicciones.json`, solo con lo que se quiera cambiar.
 
 ## Reglas de puntuación (las del propio formulario)
 

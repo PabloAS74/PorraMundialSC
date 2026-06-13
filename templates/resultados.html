@@ -4,6 +4,22 @@
 <h2 id="grupos">1. Fase de grupos</h2>
 <p class="mini">Marca el 1X2 de cada partido jugado y, cuando acabe cada grupo, su orden final.
 El marcador exacto solo se pide en los 12 partidos del bonus.</p>
+{% set api = r.get('_football_data', r.get('_api_football', {})) %}
+<div class="aviso">
+  <form method="post" action="{{ url_for('actualizar_resultados_api') }}" style="display:inline">
+    <button type="submit">Actualizar desde football-data.org</button>
+  </form>
+  <span class="mini">
+    {% if api.last_success %}
+      Última actualización: {{ api.last_success }} · {{ api.matches or api.fixtures }} partidos leídos.
+    {% else %}
+      Aún no hay actualización automática registrada.
+    {% endif %}
+    {% if api.last_error %}
+      Último error: {{ api.last_error }} ({{ api.last_error_at }}).
+    {% endif %}
+  </span>
+</div>
 
 <form method="post" action="{{ url_for('guardar_grupos') }}">
 <div class="grid g3">

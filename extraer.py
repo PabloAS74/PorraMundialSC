@@ -23,7 +23,6 @@ from pypdf import PdfReader
 
 import plantilla as P
 
-CARPETA_DEFECTO = r"C:\Users\andre\OneDrive\Escritorio\Porras Mundial SC"
 DATA = Path(__file__).parent / "data"
 SALIDA = DATA / "predicciones.json"
 GEOMETRIA = DATA / "geometria.json"
@@ -348,7 +347,7 @@ def main():
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
-    carpeta = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(CARPETA_DEFECTO)
+    carpeta = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / "OneDrive" / "Porra Mundial 2022"
     pdfs = sorted(carpeta.glob("*.pdf"))
     if not pdfs:
         print(f"No hay PDFs en {carpeta}")

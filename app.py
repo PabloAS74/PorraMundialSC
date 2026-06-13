@@ -17,6 +17,7 @@ from flask import Flask, render_template, request, redirect, url_for, abort, fla
 from werkzeug.utils import secure_filename
 
 import extraer
+import api_football
 import plantilla as P
 import puntuacion
 import dotenv
@@ -163,6 +164,17 @@ def resultados_vista():
                          for p in (datos["participantes"] if datos else [])
                          if (p["fase_final"]["goleador"] or "").strip()})
     return render_template("resultados.html", P=P, r=resultados, goleadores=goleadores)
+
+
+@app.route("/resultados/actualizar-api", methods=["POST"])
+@requiere_login
+def actualizar_resultados_api():
+    try:
+        meta = api_football.actualizar_resultados(RESULTADOS)
+        flash(f"Resultados actualizados desde football-data.org ({meta.get('matches', 0)} partidos leídos).", "ok")
+    except Exception as exc:
+        flash(f"No se pudo actualizar desde football-data.org: {exc}", "error")
+    return redirect(url_for("resultados_vista"))
 
 
 @app.route("/resultados/grupos", methods=["POST"])
@@ -347,4 +359,5 @@ def comparativa():
 
 
 if __name__ == "__main__":
+    api_football.lanzar_actualizador(RESULTADOS)
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
