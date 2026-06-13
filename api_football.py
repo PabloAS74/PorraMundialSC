@@ -14,7 +14,7 @@ import plantilla as P
 
 
 BASE_URL = "https://api.football-data.org/v4/competitions/WC/matches"
-DEFAULT_INTERVAL_SECONDS = 30 * 60
+DEFAULT_INTERVAL_SECONDS = 10 * 60
 DEFAULT_DATE_FROM = "2026-06-11"
 DEFAULT_DATE_TO = "2026-07-19"
 FINISHED_STATUSES = {"FINISHED", "AWARDED"}
