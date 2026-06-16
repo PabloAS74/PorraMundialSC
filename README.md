@@ -3,28 +3,47 @@
 Sistema para extraer los pronósticos de los PDFs de la porra y llevar la
 clasificación automáticamente durante el torneo.
 
+## Contexto del proyecto
+
+Este proyecto nace para poder hacer seguimiento de las porras del Mundial de
+mis amigos desde una aplicación web sencilla, con carga de pronósticos,
+clasificación automática y actualización de resultados mediante API.
+
+La mayor parte del desarrollo se ha hecho con ayuda de asistentes de programación basados en IA como Claude Code y Codex. Además de resolver una necesidad real durante el torneo, el proyecto sirve como excusa práctica para experimentar con Docker, Linux, nginx y el despliegue de una aplicación en un VPS de AWS.
+
+
 ## Uso diario (durante el Mundial)
 
-1. Arranca la web:
+La aplicación ha sido desplegada en un VPS para tener accesibilidad contínua y es accesible a través de un internet, sin embargo, no puedo compartir la url para proteger la identidad de los participantes de la porra.
+
+No obstante, para crear tu propia porra puedes desplegar la app en local de la siguiente forma:
+
+1. Clona el repositorio:
+```bash
+  git clone https://github.com/PabloAS74/PorraMundialSC.git
+```
+2. Crea un archivo .env en la raíz del proyecto y configura una contraseña y una api-key de la api football-org en caso de querer disponer de actualización automática:
+```
+PASSWORD=
+API-KEY=
+```
+Para obtener la api de football-org puedes crear una cuenta free tier en https://www.football-data.org/
+
+3. Arranca la web:
    ```
    python app.py
    ```
-2. Abre http://localhost:5000
-3. En **Meter resultados** se apunta lo mismo que pide el formulario de la porra:
-   - el **1X2** de cada partido de grupos (la × quita una selección errónea);
-   - el **orden final** de cada grupo cuando termine;
-   - el **marcador exacto** solo de los 12 partidos del bonus;
-   - grupo más/menos goleador y selección más goleadora (admiten empates);
-   - los **clasificados** de cada ronda eliminatoria (da igual el orden), campeón
-     y los contadores de goles (partidos con 3+ goles, goles en semis y final);
-   - al final, máximo goleador y tréboles (marcando los pronósticos acertados).
-4. La **Clasificación** se recalcula sola. Pincha en un nombre para ver el desglose de puntos.
+4. Abre http://localhost:5000
+5. Como admin puedes pulsar en la sección **Entrar** para introducir participantes y meter resultados
+6. En la subsección **Meter participantes** puedes introducir los pdfs rellenos por cada uno de los participantes de la porra. Estos pdfs son las participaciones rellenadas sobre 'Formulario USA 2026.pdf' que puedes encontrar en este repositorio.
+7. En **Meter resultados** puedes comprobar los resultados introducidos vía API (si dispones de una API-KEY) o actualizarlos tú mismo.
+8. La **Clasificación** se recalcula sola. Pincha en un nombre para ver el desglose de puntos.
+
 
 ### Actualización automática con football-data.org
 
 Si existe `API-KEY` en `.env`, al arrancar `python app.py` se lanza una
-actualización automática cada 30 minutos. Eso consume como máximo 48 consultas al
-día, por debajo del límite gratuito de 100.
+actualización automática cada 10 minutos. El límite de la API se encuentra en 10 consultas para la free tier, por lo que se puede reducir el tiempo si se desea.
 
 Variables opcionales:
 
@@ -35,10 +54,7 @@ FOOTBALL_DATA_COMPETITIONS=WC
 FOOTBALL_DATA_INTERVAL_SECONDS=1800
 ```
 
-La sincronización usa una sola llamada a `GET https://api.football-data.org/v4/matches`
-con la cabecera `X-Auth-Token`, actualiza `data/resultados.json` y guarda el estado
-en la clave `_football_data`. Desde
-**Meter resultados** también hay un botón para forzar una actualización manual.
+La sincronización usa una sola llamada a `GET https://api.football-data.org/v4/matches`con la cabecera `X-Auth-Token`, actualiza `data/resultados.json` y guarda el estado en la clave `_football_data`. Desde **Meter resultados** también hay un botón para forzar una actualización manual.
 
 
 ## Reglas de puntuación (las del propio formulario)
@@ -68,8 +84,10 @@ Notas de funcionamiento:
 | `plantilla.py` | datos fijos: grupos, partidos, tréboles, puntuaciones |
 | `puntuacion.py` | motor de puntuación |
 | `app.py` | web local (Flask) |
+
+(Carpeta generada al introducir participantes y resultados)
 | `data/predicciones.json` | pronósticos extraídos |
 | `data/resultados.json` | resultados reales (lo que metes en la web) |
 | `data/correcciones.json` | retoques manuales a porras (opcional) |
 
-Requisitos: Python con `flask`, `pypdf` y `pdfplumber` (ya instalados).
+Requisitos: Python con `flask`, `requests`, `pypdf` y `pdfplumber` (ya instalados).
