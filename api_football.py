@@ -280,6 +280,15 @@ def _limpiar_meta_antigua(r):
     r.pop("_api_football", None)
 
 
+def _esta_vacio(valor):
+    return valor is None or valor == "" or valor == [] or valor == {}
+
+
+def _poner_si_vacio(diccionario, clave, valor):
+    if _esta_vacio(diccionario.get(clave)):
+        diccionario[clave] = valor
+
+
 def _fusionar_resultados(actuales, matches):
     r = dict(actuales)
     _limpiar_meta_antigua(r)
@@ -288,6 +297,11 @@ def _fusionar_resultados(actuales, matches):
     r.setdefault("orden", {})
     r.setdefault("clasificados", {"octavos": [], "cuartos": [], "semifinales": [], "final": []})
     r.setdefault("goles3", {})
+    r.setdefault("grupo_mas", [])
+    r.setdefault("grupo_menos", [])
+    r.setdefault("equipo_mas_goles", [])
+    for ronda in ("octavos", "cuartos", "semifinales", "final"):
+        r["clasificados"].setdefault(ronda, [])
 
     tablas = {letra: _tabla_grupo(equipos) for letra, equipos in P.GRUPOS.items()}
     goles_grupo = {letra: 0 for letra in P.GRUPOS}
@@ -318,9 +332,9 @@ def _fusionar_resultados(actuales, matches):
             if goles_tpl is None:
                 continue
             clave = P.clave_partido(local_tpl, visitante_tpl)
-            r["grupos_1x2"][clave] = _resultado_1x2(goles_tpl)
+            _poner_si_vacio(r["grupos_1x2"], clave, _resultado_1x2(goles_tpl))
             if clave in exactos_claves:
-                r["exactos"][clave] = [goles_tpl[0], goles_tpl[1]]
+                _poner_si_vacio(r["exactos"], clave, [goles_tpl[0], goles_tpl[1]])
             _aplicar_partido_tabla(tablas[grupo], local_tpl, visitante_tpl, goles_tpl)
             partidos_grupo_jugados[grupo] += 1
             goles_grupo[grupo] += goles_tpl[0] + goles_tpl[1]
@@ -347,16 +361,19 @@ def _fusionar_resultados(actuales, matches):
 
     for letra, jugados in partidos_grupo_jugados.items():
         if jugados == 6:
-            r["orden"][letra] = _ordenar_tabla(tablas[letra])[:3]
+            _poner_si_vacio(r["orden"], letra, _ordenar_tabla(tablas[letra])[:3])
 
     if all(v == 6 for v in partidos_grupo_jugados.values()):
         max_goles = max(goles_grupo.values())
         min_goles = min(goles_grupo.values())
-        r["grupo_mas"] = [g for g, total in goles_grupo.items() if total == max_goles]
-        r["grupo_menos"] = [g for g, total in goles_grupo.items() if total == min_goles]
+        if _esta_vacio(r.get("grupo_mas")):
+            r["grupo_mas"] = [g for g, total in goles_grupo.items() if total == max_goles]
+        if _esta_vacio(r.get("grupo_menos")):
+            r["grupo_menos"] = [g for g, total in goles_grupo.items() if total == min_goles]
         bonus_goles = {e: goles_equipo[e] for e in P.BONUS_EQUIPOS}
         max_bonus = max(bonus_goles.values())
-        r["equipo_mas_goles"] = [e for e, total in bonus_goles.items() if total == max_bonus]
+        if _esta_vacio(r.get("equipo_mas_goles")):
+            r["equipo_mas_goles"] = [e for e, total in bonus_goles.items() if total == max_bonus]
 
     mapa_clasificados = {
         "dieciseisavos": "octavos",
@@ -366,18 +383,21 @@ def _fusionar_resultados(actuales, matches):
     }
     for ronda, destino in mapa_clasificados.items():
         if ganadores[ronda]:
-            r["clasificados"][destino] = ganadores[ronda]
+            _poner_si_vacio(r["clasificados"], destino, ganadores[ronda])
 
     esperados = {"dieciseisavos": 16, "octavos": 8, "cuartos": 4}
     for ronda, n in esperados.items():
         if jugados_ronda[ronda] == n:
-            r["goles3"][ronda] = goles3[ronda]
+            _poner_si_vacio(r["goles3"], ronda, goles3[ronda])
 
     if jugados_ronda["semifinales"] == 2:
-        r["goles_semifinales"] = goles_semis
+        if _esta_vacio(r.get("goles_semifinales")):
+            r["goles_semifinales"] = goles_semis
     if jugados_ronda["final"] == 1:
-        r["goles_final"] = goles_final
-        r["campeon"] = campeon
+        if _esta_vacio(r.get("goles_final")):
+            r["goles_final"] = goles_final
+        if _esta_vacio(r.get("campeon")):
+            r["campeon"] = campeon
 
     meta = dict(r.get(META_KEY) or {})
     meta.update({
