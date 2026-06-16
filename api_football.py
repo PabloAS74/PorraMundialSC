@@ -22,34 +22,73 @@ META_KEY = "_football_data"
 
 
 ALIASES_API = {
+    "algeria": "Argelia",
+    "argentina": "Argentina",
+    "australia": "Australia",
+    "austria": "Austria",
+    "belgium": "Bélgica",
     "bosnia and herzegovina": "Bosnia",
     "bosnia-herzegovina": "Bosnia",
+    "bosnia herzegovina": "Bosnia",
+    "brazil": "Brasil",
+    "canada": "Canadá",
     "cape verde": "Cabo Verde",
     "cape verde islands": "Cabo Verde",
+    "colombia": "Colombia",
+    "congo dr": "RD Congo",
     "cote d ivoire": "Costa de Marfil",
     "cote d'ivoire": "Costa de Marfil",
     "côte d'ivoire": "Costa de Marfil",
+    "croatia": "Croacia",
     "curacao": "Curaçao",
     "czech republic": "Rep. Checa",
     "czechia": "Rep. Checa",
     "democratic republic of the congo": "RD Congo",
     "dr congo": "RD Congo",
-    "congo dr": "RD Congo",
+    "ecuador": "Ecuador",
+    "egypt": "Egipto",
+    "england": "Inglaterra",
+    "france": "Francia",
+    "germany": "Alemania",
+    "ghana": "Ghana",
+    "haiti": "Haití",
+    "holland": "Países Bajos",
+    "iran": "Irán",
     "ir iran": "Irán",
+    "iraq": "Iraq",
     "ivory coast": "Costa de Marfil",
+    "japan": "Japón",
+    "jordan": "Jordania",
     "korea republic": "Corea del Sur",
     "korea, republic of": "Corea del Sur",
+    "mexico": "México",
+    "morocco": "Marruecos",
     "netherlands": "Países Bajos",
     "new zealand": "Nueva Zelanda",
+    "norway": "Noruega",
+    "panama": "Panamá",
+    "paraguay": "Paraguay",
+    "portugal": "Portugal",
+    "qatar": "Qatar",
+    "republic of korea": "Corea del Sur",
+    "republic of the congo": "RD Congo",
     "saudi arabia": "Arabia Saudí",
     "scotland": "Escocia",
+    "senegal": "Senegal",
     "south africa": "Sudáfrica",
     "south korea": "Corea del Sur",
+    "spain": "España",
+    "sweden": "Suecia",
+    "switzerland": "Suiza",
+    "tunisia": "Túnez",
+    "turkey": "Turquía",
     "turkiye": "Turquía",
     "türkiye": "Turquía",
     "united states": "Estados Unidos",
     "united states of america": "Estados Unidos",
+    "uruguay": "Uruguay",
     "usa": "Estados Unidos",
+    "uzbekistan": "Uzbekistán",
 }
 
 
@@ -130,6 +169,26 @@ def _grupo_de_equipo(equipo):
 def _es_partido_grupo(local, visitante):
     letra = _grupo_de_equipo(local)
     return letra if letra and _grupo_de_equipo(visitante) == letra else None
+
+
+def _partido_grupo_canonico(local, visitante):
+    """Devuelve el partido tal como esta definido en la plantilla."""
+    grupo = _es_partido_grupo(local, visitante)
+    if not grupo:
+        return None
+    equipos = {local, visitante}
+    for loc, vis in P.PARTIDOS_GRUPO[grupo]:
+        if {loc, vis} == equipos:
+            return grupo, loc, vis
+    return None
+
+
+def _goles_orientados(goles, local_api, visitante_api, local_tpl, visitante_tpl):
+    if local_api == local_tpl and visitante_api == visitante_tpl:
+        return goles
+    if local_api == visitante_tpl and visitante_api == local_tpl:
+        return goles[1], goles[0]
+    return None
 
 
 def _round_text(match):
@@ -252,17 +311,21 @@ def _fusionar_resultados(actuales, matches):
         if not local or not visitante or goles is None:
             continue
 
-        grupo = _es_partido_grupo(local, visitante)
-        if grupo:
-            clave = P.clave_partido(local, visitante)
-            r["grupos_1x2"][clave] = _resultado_1x2(goles)
+        partido_grupo = _partido_grupo_canonico(local, visitante)
+        if partido_grupo:
+            grupo, local_tpl, visitante_tpl = partido_grupo
+            goles_tpl = _goles_orientados(goles, local, visitante, local_tpl, visitante_tpl)
+            if goles_tpl is None:
+                continue
+            clave = P.clave_partido(local_tpl, visitante_tpl)
+            r["grupos_1x2"][clave] = _resultado_1x2(goles_tpl)
             if clave in exactos_claves:
-                r["exactos"][clave] = [goles[0], goles[1]]
-            _aplicar_partido_tabla(tablas[grupo], local, visitante, goles)
+                r["exactos"][clave] = [goles_tpl[0], goles_tpl[1]]
+            _aplicar_partido_tabla(tablas[grupo], local_tpl, visitante_tpl, goles_tpl)
             partidos_grupo_jugados[grupo] += 1
-            goles_grupo[grupo] += goles[0] + goles[1]
-            goles_equipo[local] += goles[0]
-            goles_equipo[visitante] += goles[1]
+            goles_grupo[grupo] += goles_tpl[0] + goles_tpl[1]
+            goles_equipo[local_tpl] += goles_tpl[0]
+            goles_equipo[visitante_tpl] += goles_tpl[1]
             continue
 
         ronda = _ronda_eliminatoria(match)
